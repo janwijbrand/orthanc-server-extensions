@@ -1,11 +1,15 @@
+import dataclasses
 import json
 import logging
-import dataclasses
 
-from orthanc_ext.logging_configurator import orthanc_logging
-from orthanc_ext.python_utilities import (ensure_iterable, create_reverse_type_dict)
 from orthanc_ext.http_utilities import (
-    create_internal_client, get_rest_api_base_url, get_certificate)
+    create_internal_client, get_certificate, get_rest_api_base_url)
+from orthanc_ext.logging_configurator import orthanc_logging
+from orthanc_ext.python_utilities import create_reverse_type_dict, ensure_iterable
+
+
+def register_event_handler(event, handler, module, client, logging_configuration=orthanc_logging):
+    pass
 
 
 def register_event_handlers(
