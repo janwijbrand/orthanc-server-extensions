@@ -1,56 +1,49 @@
 import dataclasses
-import json
 import logging
 
-from orthanc_ext.http_utilities import (
-    create_internal_client, get_certificate, get_rest_api_base_url)
-from orthanc_ext.logging_configurator import orthanc_logging
-from orthanc_ext.python_utilities import create_reverse_type_dict, ensure_iterable
+from orthanc_ext.http_utilities import create_client
+from orthanc_ext.orthanc import ChangeType, ResourceType
+
+ANY = object()
 
 
-def register_event_handler(event, handler, module, client, logging_configuration=orthanc_logging):
-    pass
+@dataclasses.dataclass
+class ChangeEvent:
+    change_type: int
+    resource_type: int
+    resource_id: str
+
+    def __str__(self):
+        return (
+            f'<{self.__class__.__name__} '
+            f'change_type={ChangeType(self.change_type)} '
+            f'resource_type={ResourceType(self.resource_type)} '
+            f'resource_id={self.resource_id or None}>')
 
 
-def register_event_handlers(
-        event_handlers, orthanc_module, client, logging_configuration=orthanc_logging):
-    logging_configuration(orthanc_module)
+class Registry(dict):
 
-    @dataclasses.dataclass
-    class ChangeEvent:
-        change_type: int
-        resource_type: int
-        resource_id: str
+    def __init__(self, orthanc, client=None):
+        self._orthanc = orthanc
+        self._client = client if client is not None else create_client(orthanc)
 
-        def __str__(self):
-            return (
-                f'ChangeEvent(change_type={event_types.get(self.change_type)}, '
-                f'resource_type={resource_types.get(self.resource_type)}, '
-                f'resource_id="{self.resource_id}")')
+    def bind(self):
+        self._orthanc.RegisterOnChangeCallback(self)
 
-    def create_type_index(orthanc_type):
-        return create_reverse_type_dict(orthanc_type)
+    def add_handler(self, event_type, *handlers):
+        self.setdefault(event_type, []).extend(handlers)
 
-    event_types = create_type_index(orthanc_module.ChangeType)
-    resource_types = create_type_index(orthanc_module.ResourceType)
-    event_handlers = {k: ensure_iterable(v) for k, v in event_handlers.items()}
+    def unhandled_event(self, event, _):
+        logging.debug(f'no handler registered for "{event}"')
 
-    def unhandled_event_logger(event, _):
-        logging.debug(f'no handler registered for {event_types[event.change_type]}')
+    def handle_event(self, event):
+        yield from (handler(event, self._client) for handler in self.get(ANY, []))
+        yield from (
+            handler(event, self._client)
+            for handler in self.get(event.change_type, [self.unhandled_event]))
 
-    def OnChange(change_type, resource_type, resource_id):
-        handlers = event_handlers.get(change_type, [unhandled_event_logger])
-        return_values = []
-        for handler in handlers:
-            event = ChangeEvent(change_type, resource_type, resource_id)
-            return_values.append(handler(event, client))
-        return return_values
-
-    orthanc_module.RegisterOnChangeCallback(OnChange)
+    def __call__(self, *params):
+        return list(self.handle_event(ChangeEvent(*params)))
 
 
-def create_client(orthanc):
-    config = json.loads(orthanc.GetConfiguration())
-    return create_internal_client(
-        get_rest_api_base_url(config), orthanc.GenerateRestApiAuthorizationToken(),
-        get_certificate(config))
+register_event_handlers = None

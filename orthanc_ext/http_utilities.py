@@ -1,3 +1,5 @@
+import json
+
 import httpx
 
 
@@ -16,3 +18,10 @@ def create_internal_client(base_url, token='', cert=None) -> httpx.Client:
         base_url=base_url,
         verify=cert if cert is not None else False,
         headers={'Authorization': token})
+
+
+def create_client(orthanc):
+    config = json.loads(orthanc.GetConfiguration())
+    return create_internal_client(
+        get_rest_api_base_url(config), orthanc.GenerateRestApiAuthorizationToken(),
+        get_certificate(config))
