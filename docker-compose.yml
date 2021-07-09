@@ -6,11 +6,9 @@ services:
             VERBOSE_ENABLED: "true"
             ORTHANC__SSL_ENABLED: "true"
             ORTHANC__SSL_CERTIFICATE: "/ssl/keyAndCert.pem"
-
             ORTHANC__PYTHON_VERBOSE: "false"
             ORTHANC__HTTP_PORT: 8042
             ORTHANC__PYTHON_SCRIPT: "/python/entry_point.py"
-
         ports:
             - "127.0.0.1:4242:4242"
             - "127.0.0.1:8042:8042"
