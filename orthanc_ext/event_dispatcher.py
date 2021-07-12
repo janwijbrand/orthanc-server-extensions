@@ -1,12 +1,10 @@
 import dataclasses
-import json
 import logging
 
-from orthanc_ext.http_utilities import (
-    create_internal_client, get_certificate, get_rest_api_base_url)
-from orthanc_ext.logging_configurator import orthanc_logging
-from orthanc_ext.python_utilities import ensure_iterable
-from orthanc_ext.types import ChangeType, ResourceType
+from orthanc_ext.http_utilities import create_client
+from orthanc_ext.orthanc import ChangeType, ResourceType
+
+ANY = object()
 
 
 @dataclasses.dataclass
@@ -22,28 +20,30 @@ class ChangeEvent:
             f'resource_id="{self.resource_id}")')
 
 
-def unhandled_event_logger(event, _):
-    logging.error(f'no handler registered for {ChangeType(event.change_type)._name_}')
+class Registry(dict):
+
+    def __init__(self, orthanc, client=None):
+        self._orthanc = orthanc
+        self._client = client if client is not None else create_client(orthanc)
+
+    def bind(self):
+        self._orthanc.RegisterOnChangeCallback(self)
+
+    def add_handler(self, event_type, *handlers):
+        self.setdefault(event_type, []).extend(handlers)
+
+    def unhandled_event(self, event, _):
+        logging.debug(f'no handler registered for "{event}"')
+
+    def handle_event(self, event):
+        yield from (handler(event, self._client) for handler in self.get(ANY, []))
+        yield from (
+            handler(event, self._client)
+            for handler in self.get(event.change_type, [self.unhandled_event]))
+
+    def __call__(self, *params):
+        return list(self.handle_event(ChangeEvent(*params)))
 
 
-def register_event_handlers(
-        event_handlers, orthanc_module, client, logging_configuration=orthanc_logging):
-    logging_configuration(orthanc_module)
-    event_handlers = {k: ensure_iterable(v) for k, v in event_handlers.items()}
-
-    def OnChange(change_type, resource_type, resource_id):
-        handlers = event_handlers.get(change_type, [unhandled_event_logger])
-        return_values = []
-        for handler in handlers:
-            event = ChangeEvent(change_type, resource_type, resource_id)
-            return_values.append(handler(event, client))
-        return return_values
-
-    orthanc_module.RegisterOnChangeCallback(OnChange)
-
-
-def create_client(orthanc):
-    config = json.loads(orthanc.GetConfiguration())
-    return create_internal_client(
-        get_rest_api_base_url(config), orthanc.GenerateRestApiAuthorizationToken(),
-        get_certificate(config))
+# BBB to have at least the event dispatch tests run without import errors elsewhere
+register_event_handlers = None

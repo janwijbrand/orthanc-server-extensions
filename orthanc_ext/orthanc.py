@@ -9,7 +9,7 @@ import uuid
 from orthanc_ext.types import ChangeType, ResourceType
 
 
-class OrthancApiHandler(object):
+class OrthancApiHandler:
 
     ChangeType = ChangeType
 
@@ -19,11 +19,11 @@ class OrthancApiHandler(object):
     def GenerateRestApiAuthorizationToken():
         return uuid.uuid4().hex
 
-    def RegisterOnChangeCallback(self, change_callback):
-        self.change_callback = change_callback
+    def RegisterOnChangeCallback(self, callback):
+        self.callback = callback
 
     def on_change(self, change_type, resource_type, resource_id):
-        return self.change_callback(change_type, resource_type, resource_id)
+        return self.callback(change_type, resource_type, resource_id)
 
     def LogInfo(self, message):
         print(f'INFO: {message}')
