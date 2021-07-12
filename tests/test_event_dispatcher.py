@@ -1,10 +1,12 @@
-import logging
-
 import respx
+
 from orthanc_ext.logging_configurator import python_logging
 from orthanc_ext.orthanc import OrthancApiHandler
 from orthanc_ext.event_dispatcher import Registry
 from orthanc_ext.testing import Capture
+
+# XXX Only a few of the tests here have been "fixed" to use the event
+# dispatch registry and test fixtures.
 
 
 def test_registered_callback_should_be_triggered_on_change_event(
@@ -32,6 +34,7 @@ def test_all_registered_callbacks_should_be_triggered_on_change_event(
     assert event1.resource_type == orthanc.ResourceType.STUDY
 
 
+# XXX didnt fix this test yet
 # def test_no_registered_callbacks_should_be_reported_in_on_change_event(caplog):
 #     args = {}
 #     event_dispatcher.register_event_handlers(
@@ -55,6 +58,7 @@ def test_shall_return_values_from_executed_handlers(orthanc: OrthancApiHandler, 
     assert system_info.get('Version') == '1.9.0'
 
 
+# XXX didnt fix this test yet
 # def test_event_shall_have_human_readable_representation(caplog):
 #     caplog.set_level(logging.INFO)
 
