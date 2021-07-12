@@ -45,5 +45,5 @@ class Registry(dict):
         return list(self.handle_event(ChangeEvent(*params)))
 
 
-# BBB
+# BBB to have at least the event dispatch tests run without import errors elsewhere
 register_event_handlers = None
