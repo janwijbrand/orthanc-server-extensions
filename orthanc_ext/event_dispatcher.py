@@ -9,16 +9,15 @@ ANY = object()
 
 @dataclasses.dataclass
 class ChangeEvent:
-    change_type: int
-    resource_type: int
-    resource_id: str
+    change_type: int = ChangeType.UNKNOWN
+    resource_type: int = ResourceType.NONE
+    resource_id: str = None
 
     def __str__(self):
         return (
-            f'<{self.__class__.__name__} '
-            f'change_type={ChangeType(self.change_type)} '
-            f'resource_type={ResourceType(self.resource_type)} '
-            f'resource_id={self.resource_id or None}>')
+            f'ChangeEvent(change_type={ChangeType(self.change_type)._name_}, '
+            f'resource_type={ResourceType(self.resource_type)._name_}, '
+            f'resource_id="{self.resource_id}")')
 
 
 class Registry(dict):
@@ -46,4 +45,5 @@ class Registry(dict):
         return list(self.handle_event(ChangeEvent(*params)))
 
 
+# BBB
 register_event_handlers = None

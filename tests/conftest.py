@@ -1,9 +1,9 @@
-from attr import s
 import pytest
 
 from orthanc_ext.event_dispatcher import Registry
 from orthanc_ext.http_utilities import create_internal_client
 from orthanc_ext.orthanc import OrthancApiHandler
+from orthanc_ext.testing import Capture
 
 
 @pytest.fixture
@@ -23,13 +23,4 @@ def registry(orthanc):
 
 @pytest.fixture
 def capture():
-
-    class Capture:
-
-        def __init__(self):
-            self.events = []
-
-        def __call__(self, event, client):
-            self.events.append(event)
-
     return Capture()

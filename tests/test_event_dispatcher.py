@@ -1,32 +1,35 @@
 import logging
 
 import respx
-from orthanc_ext.event_dispatcher import ChangeEvent, Registry
 from orthanc_ext.logging_configurator import python_logging
-from orthanc_ext.orthanc import OrthancApiHandler, ChangeType, ResourceType
+from orthanc_ext.orthanc import OrthancApiHandler
+from orthanc_ext.event_dispatcher import Registry
+from orthanc_ext.testing import Capture
 
 
-def test_registered_callback_should_be_triggered_on_change_event(orthanc, registry, capture):
-    registry.add_handler(ChangeType.STABLE_STUDY, capture)
-    orthanc.on_change(ChangeType.STABLE_STUDY, ResourceType.STUDY, 'resource-uuid')
+def test_registered_callback_should_be_triggered_on_change_event(
+        orthanc: OrthancApiHandler, registry: Registry, capture: Capture):
+    registry.add_handler(orthanc.ChangeType.STABLE_STUDY, capture)
+    orthanc.on_change(orthanc.ChangeType.STABLE_STUDY, orthanc.ResourceType.STUDY, 'resource-uuid')
     assert len(capture.events) == 1
 
     event = capture.events[0]
     assert event.resource_id == 'resource-uuid'
-    assert event.resource_type == ResourceType.STUDY
+    assert event.resource_type == orthanc.ResourceType.STUDY
 
 
-def test_all_registered_callbacks_should_be_triggered_on_change_event(orthanc, registry, capture):
-    registry.add_handler(ChangeType.STABLE_STUDY, capture)
-    registry.add_handler(ChangeType.STABLE_STUDY, capture)
-    orthanc.on_change(ChangeType.STABLE_STUDY, ResourceType.STUDY, 'resource-uuid')
+def test_all_registered_callbacks_should_be_triggered_on_change_event(
+        orthanc: OrthancApiHandler, registry: Registry, capture: Capture):
+    registry.add_handler(orthanc.ChangeType.STABLE_STUDY, capture)
+    registry.add_handler(orthanc.ChangeType.STABLE_STUDY, capture)
+    orthanc.on_change(orthanc.ChangeType.STABLE_STUDY, orthanc.ResourceType.STUDY, 'resource-uuid')
     assert len(capture.events) == 2
 
     event0, event1 = capture.events
     assert event0.resource_id == 'resource-uuid'
-    assert event0.resource_type == ResourceType.STUDY
+    assert event0.resource_type == orthanc.ResourceType.STUDY
     assert event1.resource_id == 'resource-uuid'
-    assert event1.resource_type == ResourceType.STUDY
+    assert event1.resource_type == orthanc.ResourceType.STUDY
 
 
 # def test_no_registered_callbacks_should_be_reported_in_on_change_event(caplog):
@@ -39,15 +42,15 @@ def test_all_registered_callbacks_should_be_triggered_on_change_event(orthanc, r
 
 
 @respx.mock
-def test_shall_return_values_from_executed_handlers(orthanc, registry):
+def test_shall_return_values_from_executed_handlers(orthanc: OrthancApiHandler, registry: Registry):
     system = respx.get('/system').respond(200, json={'Version': '1.9.0'})
 
     def get_system_info(event, client):
         return client.get('http://localhost:8042/system').json()
 
-    registry.add_handler(ChangeType.ORTHANC_STARTED, get_system_info)
+    registry.add_handler(orthanc.ChangeType.ORTHANC_STARTED, get_system_info)
     (system_info, ) = orthanc.on_change(
-        ChangeType.ORTHANC_STARTED, ResourceType.NONE, 'resource-uuid')
+        orthanc.ChangeType.ORTHANC_STARTED, orthanc.ResourceType.NONE, 'resource-uuid')
     assert system.called
     assert system_info.get('Version') == '1.9.0'
 
