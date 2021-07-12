@@ -7,12 +7,12 @@ from orthanc_ext.testing import Capture
 
 
 @pytest.fixture
-def orthanc():
+def orthanc() -> OrthancApiHandler:
     return OrthancApiHandler()
 
 
 @pytest.fixture
-def registry(orthanc):
+def registry(orthanc: OrthancApiHandler) -> Registry:
     registry = Registry(
         orthanc,
         create_internal_client(
@@ -22,5 +22,5 @@ def registry(orthanc):
 
 
 @pytest.fixture
-def capture():
+def capture() -> Capture:
     return Capture()
